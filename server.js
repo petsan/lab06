@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3001;
 
 app.get('/location', (request, response) => {
   try {
+    console.log(request.query)
     let search_query = request.query.city;
     let geoData  = require('./data/location.json');
     let returnObj = new Location(search_query, geoData[0]);
@@ -19,7 +20,8 @@ app.get('/location', (request, response) => {
     console.log(returnObj);
 
     response.status(200).send(returnObj);
-  } catch(err) {
+  }
+  catch(err) {
     console.log('ERROR', err);
     response.status(500).send('Server Error');
   }
