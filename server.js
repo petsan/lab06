@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3001;
 app.get('/location', (request, response) => {
   try {
     let search_query = request.query.city;
-    let geoData  = require('./data/locaton.json');
+    let geoData  = require('./data/location.json');
     let returnObj = new Location(search_query, geoData[0]);
 
     console.log(returnObj);
