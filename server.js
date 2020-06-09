@@ -17,7 +17,7 @@ let error500 = 'Sorry, something went wrong.';
 app.get('/location', (request, response) => {
   try {
     let search_query = request.query.city;
-    let geoData  = require('./data/location.json');
+    let geoData  = require('./data/location.json.js');
     let returnObj = new Location(search_query, geoData[0]);
 
     response.status(200).send(returnObj);
@@ -27,39 +27,29 @@ app.get('/location', (request, response) => {
   }
 })
 
-app.get('/weather', (request, response) => {
+app.get('/weather', (request, response ) => {
   try {
-    let search_query = request.query;
-    let weatherArray = [];
-    let weatherData = require('./data/weather.json');
-
-    weatherData.data.forEach(value => {
-      let weatherForecast = new Weather(search_query, value);
-      weatherArray.push(weatherForecast);
+    let weather = require('./data/weather.json');
+    let weatherArray = weather.data.map(element => {
+      return new Weather(element);
     })
-
     response.status(200).send(weatherArray);
-  }
-  catch(err) {
+  } catch (err) {
     response.status(500).send(error500);
   }
 })
 
-class Weather {
-  constructor(searchQuery, obj) {
-    this.search_query = searchQuery;
-    this.forecast = obj.weather.description;
-    this.time = obj.valid_date;
-  }
+function Weather(obj) {
+  // this.search_query = searchQuery;
+  this.forecast = obj.weather.description;
+  this.time = obj.valid_date;
 }
 
-class Location {
-  constructor(searchQuery, obj) {
-    this.search_query = searchQuery;
-    this.formatted_querry = obj.display_name;
-    this.latitude = obj.lat;
-    this.longitude = obj.lon;
-  }
+function Location(obj) {
+  // this.search_query = searchQuery;
+  this.formatted_querry = obj.display_name;
+  this.latitude = obj.lat;
+  this.longitude = obj.lon;
 }
 
 app.get('*', (request, response) => {
