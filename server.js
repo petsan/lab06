@@ -18,20 +18,21 @@ sqlClient.on('error', err => console.log(err));
 
 app.get('/location', (request, response) => {
   let city = request.query.city;
-  let sqlQuery = `SELECT search_query, formatted_query, latitude, longitude FROM cities WHERE search_query = $1;`;
+  // console.log('this is my city' + city);
+  let sqlQuery = 'SELECT search_query, formatted_query, latitude, longitude FROM cities WHERE search_query like $1;';
   const safeValues = [city];
 
   sqlClient.query(sqlQuery, safeValues)
     .then(sqlResult => {
-      console.log(sqlResult.rows);
+      // console.log(sqlResult.rows);
 
       if (sqlResult.rowCount) {
+        // console.log('call superagent');
         let url = `https://us1.locationiq.com/v1/search.php?key=${process.env.GEO_DATA_API_KEY}&q=${city}&format=json`;
         superagent.get(url)
           .then(resultsFromSuperAgent => {
-            let returnObj = new Location(city, resultsFromSuperAgent.body[0])
-            let sqlQuery1 = `INSERT INTO cities (search_query, formatted_query, latitude,
-              longitude) VALUES ($1, $2, $3, $4);`
+            let returnObj = new Location(city, resultsFromSuperAgent.body[0]);
+            let sqlQuery1 = 'INSERT INTO cities (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
             const safeValue = [city,
               returnObj.formatted_query,
               returnObj.latitude,
@@ -39,7 +40,7 @@ app.get('/location', (request, response) => {
 
             sqlClient.query(sqlQuery1, safeValue)
               .then(sqlResult => {
-                console.log(sqlResult.rows)
+                console.log(sqlResult.rows);
               }).catch(err => console.log(err));
 
             response.status(200).send(returnObj);
@@ -77,6 +78,23 @@ app.get('/trails', (request, response) => {
     }).catch(err => console.log(err));
 })
 
+app.get('/movies', (request, response) => {
+  const city = request.query.search_query;
+  const url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_API_KEY}&language=en-US&query=${city}`;
+
+  superagent.get(url)
+    .then(resultsFromSuperAgent => {
+      const movieArray = resultsFromSuperAgent.body.results.map(movie => {
+        return new Movie(movie);
+      })
+      response.status(200).send(movieArray);
+    }).catch(err => console.log(err))
+})
+
+app.get('/yelp', (requst, response) => {
+  const url = 'http://localhost:3000/yelp?search_query=seattle&formatted_query=Seattle%2C%20King%20County%2C%20Washington%2C%20USA&latitude=47.6038321&longitude=-122.3300624&page=1'
+})
+
 function Location(searchQuery, obj) {
   this.search_query = searchQuery;
   this.formatted_query = obj.display_name;
@@ -101,6 +119,15 @@ function Trail(obj) {
   this.condition_date = obj.conditionDate.slice(12, 19);
 }
 
+function Movie(obj) {
+  this.title = obj.title;
+  this.overview = obj.overview;
+  this.average_votes = obj.average_votes;
+  this.total_votes = obj.total_votes;
+  this.image_url = obj.image_url;
+  this.popularity = obj.popularity;
+  this.released_on = obj.released_on;
+}
 app.get('*', (request, response) => {
   response.status(404).send(ERROR404);
 });
