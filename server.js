@@ -25,8 +25,7 @@ app.get('/location', (request, response) => {
     .then(sqlResult => {
       console.log(sqlResult.rows);
 
-      if (!sqlResult.search_query) {
-        console.log('call superagent');
+      if (sqlResult.rowCount) {
         let url = `https://us1.locationiq.com/v1/search.php?key=${process.env.GEO_DATA_API_KEY}&q=${city}&format=json`;
         superagent.get(url)
           .then(resultsFromSuperAgent => {
