@@ -21,8 +21,12 @@ app.get('/location', locationHandler);
 app.get('/weather', weatherHandler);
 app.get('/trails', trailsHandler);
 app.get('/movies', moviesHandler);
+app.get('/restaurants', restaurantHandler);
+app.get('/yelp', yelpHandler);
 
 function locationHandler(request, response) {
+  // console.log('###########', request)
+
   let city = request.query.city;
   console.log('this is my city' + city);
   let sqlQuery = 'SELECT search_query, formatted_query, latitude, longitude FROM cities WHERE search_query like $1;';
@@ -88,7 +92,6 @@ function trailsHandler(request, response) {
 function moviesHandler(request, response) {
   const city = request.query.search_query;
   const url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_API_KEY}&language=en-US&query=${city}`;
-
   superagent.get(url)
     .then(resultsFromSuperAgent => {
       const movieArray = resultsFromSuperAgent.body.results.map(movie => {
@@ -98,82 +101,65 @@ function moviesHandler(request, response) {
     }).catch(err => console.log(err))
 }
 
-// app.get('/yelp', (request, response) => {
-//   const city = request.query.city;
-//   const url = `https://api.yelp.com/v3/businesses/search?restaurant&location=${city}`;
-//   const url2 = 'https://'
-//   const page = request.query.page;
-//   const numPerPage = 5;
-//   const start = (page - 1) * 5;
+function yelpHandler(request, response) {
+  const { latitude, longitude } = request.query;
+  // console.log('###########', latitude, longitude, request.query);
+  const url = `https://api.yelp.com/v3/businesses/search?latitude=${latitude}&longitude=${longitude}`;
 
-//   const queryParams = {
-//     // lat: request.query.latitude;
-//     // lng: request.query.longitude;
-//     // start: start;
-//     // count: numPerPage;
-//   }
-//   // superagent.get(url)
-//   //   .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
-//   //   .then(resultsFromSuperAgent => {
-//   //     console.log('results from superagent 101: ' + resultsFromSuperAgent)
-//   //     let results = JSON.parse(resultsFromSuperAgent.text);
-//   //     const yelpArray = results.businesses.map(yelp => {
-//   //       return new Yelp(yelp);
-//   //     })
-//   //     response.status(200).send(yelpArray)
-//   //   }).catch(err => console.log(err))
-//   superagent.get(url)
-//     .set('user-kkey', 'process.env.YELP_API_KEY}')
-//     .query(queryParams)
-//     .then(data => {
-//       console.log('data from superagent', data.body);
-//       let restaurantArray = data.body.restaurants;
-//       console.log('this is my restaurant Array' + restaurantArray[0])
-//       const finalRestaurants = restaurantArray.map(eatery => {
-//         return new Restaaurant(eatery)
-//       }
-//     )
-// })
+  // this code is not working yet
+  // const page = request.query.page;
+  // const numPerPage = 5;
+  // const start = (page - 1) * 5;
 
-// app.get('/restaurants', (request, response) => {
-//   const city = request.query.city;
-//   const url = 'https://'
-//   const page = request.query.page;
-//   const numPerPage = 5;
-//   const start = (page - 1) * 5;
+  // const queryParams = {
+  //   latitude: latitude,
+  //   longitude: longitude
+  // }
 
-//   const queryParams = {
-//     // lat: request.query.latitude;
-//     // lng: request.query.longitude;
-//     // start: start;
-//     // count: numPerPage;
-//   }
-//   // superagent.get(url)
-//   //   .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
-//   //   .then(resultsFromSuperAgent => {
-//   //     console.log('results from superagent 101: ' + resultsFromSuperAgent)
-//   //     let results = JSON.parse(resultsFromSuperAgent.text);
-//   //     const yelpArray = results.businesses.map(yelp => {
-//   //       return new Yelp(yelp);
-//   //     })
-//   //     response.status(200).send(yelpArray)
-//   //   }).catch(err => console.log(err))
-//   superagent.get(url)
-//     .set('user-kkey', 'process.env.YELP_API_KEY}')
-//     .query(queryParams)
-//     .then(data => {
-//       console.log('data from superagent', data.body);
-//       let restaurantArray = data.body.restaurants;
-//       console.log('this is my restaurant Array' + restaurantArray[0])
-//       const finalRestaurants = restaurantArray.map(eatery => {
-//         return new Restaaurant(eatery)
-//       }
-//     )
-// })
+  superagent.get(url)
+    .set({'Authorization': `Bearer ${process.env.YELP_API_KEY}`})
+    .then(resultsFromSuperAgent => {
+      console.log(resultsFromSuperAgent);
+      const yelpArray = resultsFromSuperAgent.body.businesses.map(yelp => {
+        return new Yelp(yelp);
+      })
+      response.status(200).send(yelpArray);
+    }).catch(err => console.log(err));
+}
 
+function restaurantHandler(request, response){
+  const page = request.query.page;
+  const numPerPage = 5;
+  const start = (page - 1) * 5;
+
+  const url = 'https://developers.zomato.com/api/v2.1/search';
+
+  const queryParams = {
+    lat: request.query.latitude,
+    start: start,
+    count: numPerPage,
+    lng: request.query.longitude
+  }
+
+  superagent.get(url)
+    .set('user-key', process.env.ZOMATO_API_KEY)
+    .query(queryParams)
+    .then(data => {
+      console.log('data from superagent', data.body);
+      let restaurantArray = data.body.restaurants; // this is the array that I want
+      console.log('this is my restaurantArray', restaurantArray[0]);
+
+      const finalRestaurants = restaurantArray.map(eatery => {
+        return new Restaurant(eatery);
+      })
+      response.status(200).send(finalRestaurants);
+    })
+};
 
 function Restaurant(obj){
-
+  this.restaurant = obj.restaurant.name;
+  this.cuisines = obj.restaurant.cuisines;
+  this.locality = obj.restaurant.location.locality;
 }
 
 function Location(searchQuery, obj) {
