@@ -128,6 +128,15 @@ function Movie(obj) {
   this.popularity = obj.popularity;
   this.released_on = obj.released_on;
 }
+
+function Yelp(obj) {
+  this.name = obj.name ;
+  this.image_url = obj.image_url ;
+  this.price = obj.price ;
+  this.rating = obj.rating ;
+  this.url = obj.url ;
+}
+
 app.get('*', (request, response) => {
   response.status(404).send(ERROR404);
 });
