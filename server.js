@@ -20,15 +20,15 @@ app.get('/location', (request, response) => {
   let city = request.query.city;
   //MAKE the first client.query SECTION
   //determine the sql variable  variable = SELECT
-  // let sqlQuery = `SELECT search_query, formatted_query, latitude, longitude FROM
-  //   cities WHERE search_query = '$1';`;
   let sqlQuery = `SELECT search_query, formatted_query, latitude, longitude FROM
-    cities WHERE search_query = 'kent';`;
+    cities WHERE search_query = '$1';`;
+  // let sqlQuery = `SELECT search_query, formatted_query, latitude, longitude FROM
+  //   cities WHERE search_query = 'kent';`;
   //determine the safe value variable
-  let safeValue = [city];
+  const safeValues = [sqlQuery];
   //make a client.query
-  sqlClient.query(sqlQuery)
-  //sqlClient.query(sqlQuery, safeValue)
+  // sqlClient.query(sqlQuery)
+  sqlClient.query(sqlQuery, safeValues)
   //make a '.then' and inside this '.then' check if SELECT statement return a result (does it exist in the database)
     .then(sqlResult => {
       console.log(sqlResult.rows);
@@ -39,16 +39,31 @@ app.get('/location', (request, response) => {
         superagent.get(url)
           .then(resultsFromSuperAgent => {
             let returnObj = new Location(city, resultsFromSuperAgent.body[0])
-            // query to insert the city into the database before the response
-            // let sqlQuery2 = `INSERT INTO cities (search_query, formatted_query, latitude,
-            //   longitude VALUES ($1, $2, $3, $4);`;
-            let sqlQuery2 = `insert into cities (search_query,
-              formatted_query, latitude, longitude) values
-              ('olympia', 'Olympia, WA', 45.546, 179.000);`;
-            sqlClient.query(sqlQuery2)
+            // console.log(returnObj.search_query)
+            // console.log(returnObj.formatted_query)
+            // console.log(returnObj.latitude)
+            // console.log(returnObj.longitude)
+            let sqlQuery1 = `INSERT INTO cities (search_query, formatted_query, latitude,
+              longitude) VALUES ($1, $2, $3, $4);`
+            const safeValue = [city,
+              returnObj.formatted_query,
+              returnObj.latitude,
+              returnObj.longitude];
+
+            sqlClient.query(sqlQuery1, safeValue)
               .then(sqlResult => {
                 console.log(sqlResult.rows)
               }).catch(err => console.log(err));
+
+            // let sqlQuery2 = `insert into cities (search_query,
+            //   formatted_query, latitude, longitude) values
+            //   ('olympia', 'Olympia, WA', 45.546, 179.000);`;
+
+            // sqlClient.query(sqlQuery2)
+            //   .then(sqlResult => {
+            //     console.log(sqlResult.rows)
+            //   }).catch(err => console.log(err));
+
             response.status(200).send(returnObj);
             console.log(returnObj);
           }).catch(err => console.log(err));
@@ -57,22 +72,6 @@ app.get('/location', (request, response) => {
       }
     })
     .catch(err => console.log(err));
-
-  // if it does not exist
-  //in the else {all superagent}
-  //  // change this to check if request.search_query exists
-
-  ///////
-  //
-
-
-  // sqlClient.query(sqlQuery2, safeValue)
-  // .then()
-  // .catch();
-  //   //if so return it to the client
-
-
-
 })
 
 app.get('/weather', (request, response) => {
